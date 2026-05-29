@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QVAC Local AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #fff; color: #1a1a1a; font-family: system-ui, -apple-system, sans-serif; }
+    main { max-width: 720px; margin: 40px auto; padding: 0 24px; }
+    h1   { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+    .subtitle { color: #666; margin: 0 0 32px; font-size: 14px; }
+    .field { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    select, input[type="text"], textarea {
+      width: 100%; padding: 9px 12px; border-radius: 6px;
+      border: 1px solid #d0d7de; font-size: 14px; font-family: inherit;
+      background: #fff;
+    }
+    select   { cursor: pointer; }
+    textarea { resize: vertical; }
+    #customUrl { margin-top: 8px; display: none; }
+    .hint   { font-size: 12px; color: #888; margin: 4px 0 0; }
+    #status { font-size: 13px; color: #555; font-style: italic; margin-top: 12px; display: none; }
+    button {
+      padding: 10px 28px; background: #0070f3; color: #fff; border: none;
+      border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    button:disabled { background: #999; cursor: not-allowed; }
+    #resultField { display: none; }
+    #result {
+      padding: 14px 16px; background: #f6f8fa; border-radius: 6px;
+      border: 1px solid #e1e4e8; min-height: 80px; font-size: 14px;
+      line-height: 1.7; white-space: pre-wrap; font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🤖 QVAC Local AI</h1>
+    <p class="subtitle">Inference runs entirely on your machine — no data sent to the cloud.</p>
+
+    <div class="field">
+      <label for="modelSelect">Model</label>
+      <select id="modelSelect"></select>
+      <input type="text" id="customUrl"
+             placeholder="Paste a Hugging Face .gguf direct download URL" />
+    </div>
+
+    <div class="field">
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt" rows="5" placeholder="Ask anything…"></textarea>
+      <p class="hint">Ctrl + Enter to submit</p>
+    </div>
+
+    <button id="askBtn">▶ Ask</button>
+
+    <p id="status"></p>
+
+    <div id="resultField" class="field">
+      <label>Result</label>
+      <div id="result"></div>
+    </div>
+  </main>
+
+  <script>
+    const PRESETS = [
+      { label: 'Llama 3.2 1B — Meta  (~773 MB, fast)',      url: 'https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_0.gguf' },
+      { label: 'Llama 3.2 3B — Meta  (~1.9 GB, balanced)',  url: 'https://huggingface.co/unsloth/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_0.gguf' },
+      { label: 'Qwen3 0.6B — Alibaba  (~400 MB, tiny)',     url: 'https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q4_K_M.gguf' },
+      { label: 'Gemma 3 1B — Google  (~670 MB)',             url: 'https://huggingface.co/unsloth/gemma-3-1b-it-GGUF/resolve/main/gemma-3-1b-it-Q4_K_M.gguf' },
+      { label: 'Mistral 7B — Mistral AI  (~4.1 GB)',        url: 'https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf' },
+      { label: '🔗 Custom URL…', url: '' },
+    ];
+
+    const sel       = document.getElementById('modelSelect');
+    const customUrl = document.getElementById('customUrl');
+    const promptEl  = document.getElementById('prompt');
+    const askBtn    = document.getElementById('askBtn');
+    const statusEl  = document.getElementById('status');
+    const resultEl  = document.getElementById('result');
+    const resultField = document.getElementById('resultField');
+
+    // Populate model dropdown
+    PRESETS.forEach((m, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = m.label;
+      sel.appendChild(opt);
+    });
+
+    const isCustom = () => Number(sel.value) === PRESETS.length - 1;
+
+    sel.addEventListener('change', () => {
+      customUrl.style.display = isCustom() ? 'block' : 'none';
+      updateBtn();
+    });
+
+    promptEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) ask();
+    });
+
+    customUrl.addEventListener('input', updateBtn);
+    promptEl.addEventListener('input', updateBtn);
+
+    function updateBtn() {
+      const modelSrc = isCustom() ? customUrl.value.trim() : PRESETS[sel.value].url;
+      askBtn.disabled = !promptEl.value.trim() || !modelSrc;
+    }
+
+    askBtn.addEventListener('click', ask);
+
+    function setLoading(on) {
+      askBtn.disabled = on;
+      sel.disabled = on;
+      promptEl.disabled = on;
+      customUrl.disabled = on;
+    }
+
+    function showStatus(msg) {
+      statusEl.textContent = msg;
+      statusEl.style.display = msg ? 'block' : 'none';
+    }
+
+    async function ask() {
+      const modelSrc = isCustom() ? customUrl.value.trim() : PRESETS[sel.value].url;
+      if (!promptEl.value.trim() || !modelSrc) return;
+
+      resultEl.textContent = '';
+      resultField.style.display = 'none';
+      showStatus('Loading model… (first run downloads the file, subsequent runs use local cache)');
+      setLoading(true);
+
+      try {
+        const res = await fetch('/api/completion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptEl.value, modelSrc }),
+        });
+
+        if (!res.ok) {
+          resultEl.textContent = `Error ${res.status}: ${await res.text()}`;
+          resultField.style.display = 'block';
+          return;
+        }
+
+        showStatus('');
+        resultField.style.display = 'block';
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          resultEl.textContent += decoder.decode(value, { stream: true });
+        }
+      } catch (err) {
+        resultEl.textContent = `Error: ${err.message}`;
+        resultField.style.display = 'block';
+      } finally {
+        showStatus('');
+        setLoading(false);
+        updateBtn();
+      }
+    }
+  </script>
+</body>
+</html>
