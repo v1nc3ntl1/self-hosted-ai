@@ -9,26 +9,77 @@
     body { margin: 0; background: #fff; color: #1a1a1a; font-family: system-ui, -apple-system, sans-serif; }
     main { max-width: 720px; margin: 40px auto; padding: 0 24px; }
     h1   { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
-    .subtitle { color: #666; margin: 0 0 32px; font-size: 14px; }
+    .subtitle { color: #666; margin: 0 0 24px; font-size: 14px; }
+
+    /* tabs */
+    .tabs { display: flex; gap: 4px; border-bottom: 2px solid #e1e4e8; margin-bottom: 28px; }
+    .tab-btn {
+      padding: 8px 20px; background: none; border: none; border-bottom: 2px solid transparent;
+      margin-bottom: -2px; font-size: 14px; font-weight: 600; color: #666; cursor: pointer;
+    }
+    .tab-btn.active { color: #0070f3; border-bottom-color: #0070f3; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* shared form styles */
     .field { margin-bottom: 20px; }
-    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
-    select, input[type="text"], textarea {
+    label  { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    select, input[type="text"], input[type="number"], textarea {
       width: 100%; padding: 9px 12px; border-radius: 6px;
-      border: 1px solid #d0d7de; font-size: 14px; font-family: inherit;
-      background: #fff;
+      border: 1px solid #d0d7de; font-size: 14px; font-family: inherit; background: #fff;
     }
     select   { cursor: pointer; }
     textarea { resize: vertical; }
-    #customUrl { margin-top: 8px; display: none; }
-    .hint   { font-size: 12px; color: #888; margin: 4px 0 0; }
-    #status { font-size: 13px; color: #555; font-style: italic; margin-top: 12px; display: none; }
+    .hint    { font-size: 12px; color: #888; margin: 4px 0 0; }
+    .status  { font-size: 13px; color: #555; font-style: italic; margin-top: 12px; display: none; }
     button {
       padding: 10px 28px; background: #0070f3; color: #fff; border: none;
       border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer;
     }
     button:disabled { background: #999; cursor: not-allowed; }
-    #resultField { display: none; }
-    #result {
+
+    /* text tab */
+    #t-customUrl { margin-top: 8px; display: none; }
+    #t-resultField { display: none; }
+    #t-result {
+      padding: 14px 16px; background: #f6f8fa; border-radius: 6px;
+      border: 1px solid #e1e4e8; min-height: 80px; font-size: 14px;
+      line-height: 1.7; white-space: pre-wrap; font-family: inherit;
+    }
+
+    /* image tab */
+    .row { display: flex; gap: 12px; }
+    .row .field { flex: 1; }
+    #img-progress { display: none; margin-top: 16px; }
+    #img-progress-bar-wrap {
+      background: #e1e4e8; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 6px;
+    }
+    #img-progress-bar { background: #0070f3; height: 100%; width: 0; transition: width .15s; }
+    #img-progress-label { font-size: 12px; color: #555; margin-top: 4px; }
+    #img-output { display: none; margin-top: 20px; }
+    #img-output img { max-width: 100%; border-radius: 8px; border: 1px solid #e1e4e8; }
+    #img-error { display: none; color: #c00; font-size: 13px; margin-top: 12px; }
+
+    /* rag tab */
+    .section-divider { border: none; border-top: 1px solid #e1e4e8; margin: 28px 0; }
+    #rag-ingest-progress { display: none; margin-top: 12px; }
+    #rag-ingest-bar-wrap {
+      background: #e1e4e8; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 6px;
+    }
+    #rag-ingest-bar { background: #0070f3; height: 100%; width: 0; transition: width .15s; }
+    #rag-ingest-progress-label { font-size: 12px; color: #555; margin-top: 4px; }
+    #rag-ingest-status, #rag-query-status {
+      font-size: 13px; color: #555; font-style: italic; margin-top: 8px; display: none;
+    }
+    #rag-context { display: none; margin-top: 20px; }
+    #rag-context-list { list-style: none; padding: 0; margin: 8px 0 0; }
+    #rag-context-list li {
+      padding: 10px 12px; background: #f6f8fa; border-radius: 6px;
+      border: 1px solid #e1e4e8; margin-bottom: 8px; font-size: 13px; line-height: 1.5;
+    }
+    .context-score { font-size: 11px; color: #888; margin-left: 8px; font-style: italic; }
+    #rag-answer { display: none; margin-top: 20px; }
+    #rag-answer-text {
       padding: 14px 16px; background: #f6f8fa; border-radius: 6px;
       border: 1px solid #e1e4e8; min-height: 80px; font-size: 14px;
       line-height: 1.7; white-space: pre-wrap; font-family: inherit;
@@ -40,31 +91,151 @@
     <h1>🤖 QVAC Local AI</h1>
     <p class="subtitle">Inference runs entirely on your machine — no data sent to the cloud.</p>
 
-    <div class="field">
-      <label for="modelSelect">Model</label>
-      <select id="modelSelect"></select>
-      <input type="text" id="customUrl"
-             placeholder="Paste a Hugging Face .gguf direct download URL" />
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:0">
+      <div class="tabs" style="margin-bottom:0;border-bottom:none">
+        <button class="tab-btn active" data-tab="text">💬 Text</button>
+        <button class="tab-btn"        data-tab="image">🎨 Image</button>
+        <button class="tab-btn"        data-tab="rag">🔍 RAG</button>
+      </div>
+      <button id="reset-btn" title="Kill the Bare worker to free GPU &amp; RAM"
+        style="padding:6px 14px;font-size:12px;font-weight:600;background:#f5f5f5;color:#555;border:1px solid #d0d7de;border-radius:6px;cursor:pointer;margin-bottom:2px">
+        ⚡ Reset worker
+      </button>
+    </div>
+    <div style="border-bottom:2px solid #e1e4e8;margin-bottom:28px"></div>
+
+    <!-- ── Text generation ─────────────────────────────────────────────── -->
+    <div id="tab-text" class="tab-panel active">
+      <div class="field">
+        <label for="t-modelSelect">Model</label>
+        <select id="t-modelSelect"></select>
+        <input type="text" id="t-customUrl"
+               placeholder="Paste a Hugging Face .gguf direct download URL" />
+      </div>
+      <div class="field">
+        <label for="t-prompt">Prompt</label>
+        <textarea id="t-prompt" rows="5" placeholder="Ask anything…"></textarea>
+        <p class="hint">Ctrl + Enter to submit</p>
+      </div>
+      <button id="t-askBtn">▶ Ask</button>
+      <p id="t-status" class="status"></p>
+      <div id="t-resultField" class="field">
+        <label>Result</label>
+        <div id="t-result"></div>
+      </div>
     </div>
 
-    <div class="field">
-      <label for="prompt">Prompt</label>
-      <textarea id="prompt" rows="5" placeholder="Ask anything…"></textarea>
-      <p class="hint">Ctrl + Enter to submit</p>
+    <!-- ── Image generation ────────────────────────────────────────────── -->
+    <div id="tab-image" class="tab-panel">
+      <div class="field">
+        <label for="img-model">Model</label>
+        <select id="img-model">
+          <option value="sd21">Stable Diffusion 2.1 — single GGUF  (~2.1 GB, CPU/GPU)</option>
+          <option value="flux2klein">FLUX.2-klein 4B — split layout  (~5 GB total, GPU required)</option>
+        </select>
+        <p class="hint" id="img-model-hint"></p>
+      </div>
+      <div class="field">
+        <label for="img-prompt">Prompt</label>
+        <textarea id="img-prompt" rows="4" placeholder="Describe the image you want to generate…"></textarea>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="img-width">Width (px)</label>
+          <select id="img-width">
+            <option value="256">256</option>
+            <option value="512" selected>512</option>
+            <option value="768">768</option>
+            <option value="1024">1024</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="img-height">Height (px)</label>
+          <select id="img-height">
+            <option value="256">256</option>
+            <option value="512" selected>512</option>
+            <option value="768">768</option>
+            <option value="1024">1024</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="img-steps">Steps</label>
+          <input type="number" id="img-steps" value="20" min="1" max="100" />
+        </div>
+      </div>
+      <button id="img-genBtn">🎨 Generate</button>
+      <div id="img-progress">
+        <div id="img-progress-bar-wrap"><div id="img-progress-bar"></div></div>
+        <div id="img-progress-label">Starting…</div>
+      </div>
+      <p id="img-error"></p>
+      <div id="img-output">
+        <label>Generated image</label>
+        <img id="img-result" src="" alt="Generated image" />
+      </div>
     </div>
 
-    <button id="askBtn">▶ Ask</button>
+    <!-- ── RAG ───────────────────────────────────────────────────────────── -->
+    <div id="tab-rag" class="tab-panel">
 
-    <p id="status"></p>
+      <h2 style="font-size:16px;font-weight:700;margin:0 0 16px;">📚 Knowledge Base</h2>
+      <div class="field">
+        <label for="rag-docs">Documents to ingest</label>
+        <textarea id="rag-docs" rows="6"
+          placeholder="Paste documents here, separated by blank lines…&#10;&#10;Document one text goes here…&#10;&#10;Document two text goes here…"></textarea>
+        <p class="hint">Each block separated by a blank line becomes one document chunk.</p>
+      </div>
+      <button id="rag-ingestBtn">📥 Ingest</button>
+      <div id="rag-ingest-progress">
+        <div id="rag-ingest-bar-wrap"><div id="rag-ingest-bar"></div></div>
+        <div id="rag-ingest-progress-label">Starting…</div>
+      </div>
+      <p id="rag-ingest-status"></p>
 
-    <div id="resultField" class="field">
-      <label>Result</label>
-      <div id="result"></div>
+      <hr class="section-divider" />
+
+      <h2 style="font-size:16px;font-weight:700;margin:0 0 16px;">🔍 Ask the Knowledge Base</h2>
+      <div class="field">
+        <label for="rag-query">Question</label>
+        <textarea id="rag-query" rows="3" placeholder="Ask a question about your documents…"></textarea>
+      </div>
+      <div class="field">
+        <label for="rag-compModel">Completion model</label>
+        <select id="rag-compModel"></select>
+        <input type="text" id="rag-compCustomUrl"
+               placeholder="Paste a Hugging Face .gguf direct download URL"
+               style="display:none;margin-top:8px;" />
+      </div>
+      <button id="rag-askBtn">🔍 Ask</button>
+      <p id="rag-query-status"></p>
+
+      <div id="rag-context">
+        <label>📚 Retrieved context</label>
+        <ul id="rag-context-list"></ul>
+      </div>
+
+      <div id="rag-answer">
+        <label>💬 Answer</label>
+        <div id="rag-answer-text"></div>
+      </div>
+
     </div>
+
   </main>
 
   <script>
-    const PRESETS = [
+    // ── Tabs ──────────────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ── Text generation ───────────────────────────────────────────────────
+    const TEXT_PRESETS = [
       { label: 'Llama 3.2 1B — Meta  (~773 MB, fast)',      url: 'https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_0.gguf' },
       { label: 'Llama 3.2 3B — Meta  (~1.9 GB, balanced)',  url: 'https://huggingface.co/unsloth/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_0.gguf' },
       { label: 'Qwen3 0.6B — Alibaba  (~400 MB, tiny)',     url: 'https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q4_K_M.gguf' },
@@ -73,96 +244,366 @@
       { label: '🔗 Custom URL…', url: '' },
     ];
 
-    const sel       = document.getElementById('modelSelect');
-    const customUrl = document.getElementById('customUrl');
-    const promptEl  = document.getElementById('prompt');
-    const askBtn    = document.getElementById('askBtn');
-    const statusEl  = document.getElementById('status');
-    const resultEl  = document.getElementById('result');
-    const resultField = document.getElementById('resultField');
+    const tSel        = document.getElementById('t-modelSelect');
+    const tCustomUrl  = document.getElementById('t-customUrl');
+    const tPrompt     = document.getElementById('t-prompt');
+    const tAskBtn     = document.getElementById('t-askBtn');
+    const tStatus     = document.getElementById('t-status');
+    const tResult     = document.getElementById('t-result');
+    const tResultField = document.getElementById('t-resultField');
 
-    // Populate model dropdown
-    PRESETS.forEach((m, i) => {
+    TEXT_PRESETS.forEach((m, i) => {
       const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = m.label;
-      sel.appendChild(opt);
+      opt.value = i; opt.textContent = m.label;
+      tSel.appendChild(opt);
     });
 
-    const isCustom = () => Number(sel.value) === PRESETS.length - 1;
+    const tIsCustom = () => Number(tSel.value) === TEXT_PRESETS.length - 1;
 
-    sel.addEventListener('change', () => {
-      customUrl.style.display = isCustom() ? 'block' : 'none';
-      updateBtn();
+    tSel.addEventListener('change', () => {
+      tCustomUrl.style.display = tIsCustom() ? 'block' : 'none';
+      tUpdateBtn();
     });
+    tPrompt.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) tAsk(); });
+    tCustomUrl.addEventListener('input', tUpdateBtn);
+    tPrompt.addEventListener('input', tUpdateBtn);
 
-    promptEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) ask();
-    });
-
-    customUrl.addEventListener('input', updateBtn);
-    promptEl.addEventListener('input', updateBtn);
-
-    function updateBtn() {
-      const modelSrc = isCustom() ? customUrl.value.trim() : PRESETS[sel.value].url;
-      askBtn.disabled = !promptEl.value.trim() || !modelSrc;
+    function tUpdateBtn() {
+      const src = tIsCustom() ? tCustomUrl.value.trim() : TEXT_PRESETS[tSel.value].url;
+      tAskBtn.disabled = !tPrompt.value.trim() || !src;
+    }
+    function tSetLoading(on) {
+      tAskBtn.disabled = on; tSel.disabled = on; tPrompt.disabled = on; tCustomUrl.disabled = on;
+    }
+    function tShowStatus(msg) {
+      tStatus.textContent = msg; tStatus.style.display = msg ? 'block' : 'none';
     }
 
-    askBtn.addEventListener('click', ask);
+    tAskBtn.addEventListener('click', tAsk);
 
-    function setLoading(on) {
-      askBtn.disabled = on;
-      sel.disabled = on;
-      promptEl.disabled = on;
-      customUrl.disabled = on;
-    }
-
-    function showStatus(msg) {
-      statusEl.textContent = msg;
-      statusEl.style.display = msg ? 'block' : 'none';
-    }
-
-    async function ask() {
-      const modelSrc = isCustom() ? customUrl.value.trim() : PRESETS[sel.value].url;
-      if (!promptEl.value.trim() || !modelSrc) return;
-
-      resultEl.textContent = '';
-      resultField.style.display = 'none';
-      showStatus('Loading model… (first run downloads the file, subsequent runs use local cache)');
-      setLoading(true);
-
+    async function tAsk() {
+      const modelSrc = tIsCustom() ? tCustomUrl.value.trim() : TEXT_PRESETS[tSel.value].url;
+      if (!tPrompt.value.trim() || !modelSrc) return;
+      tResult.textContent = '';
+      tResultField.style.display = 'none';
+      tShowStatus('Loading model… (first run downloads the file, subsequent runs use local cache)');
+      tSetLoading(true);
       try {
         const res = await fetch('/api/completion', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: promptEl.value, modelSrc }),
+          body: JSON.stringify({ prompt: tPrompt.value, modelSrc }),
         });
-
         if (!res.ok) {
-          resultEl.textContent = `Error ${res.status}: ${await res.text()}`;
-          resultField.style.display = 'block';
+          tResult.textContent = `Error ${res.status}: ${await res.text()}`;
+          tResultField.style.display = 'block';
           return;
         }
-
-        showStatus('');
-        resultField.style.display = 'block';
-
+        tShowStatus('');
+        tResultField.style.display = 'block';
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          resultEl.textContent += decoder.decode(value, { stream: true });
+          tResult.textContent += decoder.decode(value, { stream: true });
         }
       } catch (err) {
-        resultEl.textContent = `Error: ${err.message}`;
-        resultField.style.display = 'block';
+        tResult.textContent = `Error: ${err.message}`;
+        tResultField.style.display = 'block';
       } finally {
-        showStatus('');
-        setLoading(false);
-        updateBtn();
+        tShowStatus(''); tSetLoading(false); tUpdateBtn();
       }
     }
+
+    // ── Image generation ──────────────────────────────────────────────────
+    const imgModel    = document.getElementById('img-model');
+    const imgPrompt   = document.getElementById('img-prompt');
+    const imgWidth    = document.getElementById('img-width');
+    const imgHeight   = document.getElementById('img-height');
+    const imgSteps    = document.getElementById('img-steps');
+    const imgGenBtn   = document.getElementById('img-genBtn');
+    const imgProgress = document.getElementById('img-progress');
+    const imgBar      = document.getElementById('img-progress-bar');
+    const imgLabel    = document.getElementById('img-progress-label');
+    const imgOutput   = document.getElementById('img-output');
+    const imgResult   = document.getElementById('img-result');
+    const imgError    = document.getElementById('img-error');
+    const imgHint     = document.getElementById('img-model-hint');
+
+    const IMG_HINTS = {
+      sd21:       'Single GGUF file, no GPU required. ~2.1 GB download on first use.',
+      flux2klein: 'Requires a GPU. Downloads 3 files (~5 GB total) on first use.',
+    };
+    imgModel.addEventListener('change', () => { imgHint.textContent = IMG_HINTS[imgModel.value] || ''; });
+    imgHint.textContent = IMG_HINTS[imgModel.value];
+
+    imgPrompt.addEventListener('input', () => {
+      imgGenBtn.disabled = !imgPrompt.value.trim();
+    });
+
+    imgGenBtn.addEventListener('click', imgGenerate);
+
+    async function imgGenerate() {
+      if (!imgPrompt.value.trim()) return;
+      imgGenBtn.disabled = true;
+      imgOutput.style.display = 'none';
+      imgError.style.display  = 'none';
+      imgProgress.style.display = 'block';
+      imgBar.style.width = '0';
+      imgLabel.textContent = 'Connecting…';
+
+      try {
+        const res = await fetch('/api/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt:      imgPrompt.value,
+            modelPreset: imgModel.value,
+            width:       +imgWidth.value,
+            height:      +imgHeight.value,
+            steps:       +imgSteps.value,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Server error ${res.status}: ${await res.text()}`);
+        }
+
+        const reader  = res.body.getReader();
+        const decoder = new TextDecoder();
+        let   buf     = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          // Parse SSE events from the buffer
+          const events = buf.split('\n\n');
+          buf = events.pop(); // keep incomplete last chunk
+          for (const block of events) {
+            const eventMatch = block.match(/^event: (\w+)/m);
+            const dataMatch  = block.match(/^data: (.+)/m);
+            if (!eventMatch || !dataMatch) continue;
+            const type = eventMatch[1];
+            const data = JSON.parse(dataMatch[1]);
+            if (type === 'load') {
+              imgBar.style.width = data.percentage + '%';
+              imgLabel.textContent = `Downloading model… ${data.percentage}%`;
+            } else if (type === 'progress') {
+              const pct = Math.round((data.step / data.totalSteps) * 100);
+              imgBar.style.width = pct + '%';
+              imgLabel.textContent = `Generating… step ${data.step} / ${data.totalSteps}`;
+            } else if (type === 'image') {
+              imgBar.style.width = '100%';
+              imgResult.src = 'data:image/png;base64,' + data.png;
+              imgOutput.style.display = 'block';
+            } else if (type === 'error') {
+              throw new Error(data.message);
+            }
+          }
+        }
+      } catch (err) {
+        imgError.textContent = 'Error: ' + err.message;
+        imgError.style.display = 'block';
+      } finally {
+        imgProgress.style.display = 'none';
+        imgGenBtn.disabled = !imgPrompt.value.trim();
+      }
+    }
+
+    // ── RAG ───────────────────────────────────────────────────────────────
+    const ragDocs         = document.getElementById('rag-docs');
+    const ragIngestBtn    = document.getElementById('rag-ingestBtn');
+    const ragIngestProg   = document.getElementById('rag-ingest-progress');
+    const ragIngestBar    = document.getElementById('rag-ingest-bar');
+    const ragIngestLbl    = document.getElementById('rag-ingest-progress-label');
+    const ragIngestSt     = document.getElementById('rag-ingest-status');
+    const ragQueryEl      = document.getElementById('rag-query');
+    const ragCompModel    = document.getElementById('rag-compModel');
+    const ragCompCustom   = document.getElementById('rag-compCustomUrl');
+    const ragAskBtn       = document.getElementById('rag-askBtn');
+    const ragQuerySt      = document.getElementById('rag-query-status');
+    const ragContextEl    = document.getElementById('rag-context');
+    const ragContextList  = document.getElementById('rag-context-list');
+    const ragAnswerEl     = document.getElementById('rag-answer');
+    const ragAnswerText   = document.getElementById('rag-answer-text');
+
+    // Populate completion model dropdown from the shared TEXT_PRESETS list
+    TEXT_PRESETS.forEach((m, i) => {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = m.label;
+      ragCompModel.appendChild(opt);
+    });
+
+    const ragIsCustomComp = () => Number(ragCompModel.value) === TEXT_PRESETS.length - 1;
+
+    ragCompModel.addEventListener('change', () => {
+      ragCompCustom.style.display = ragIsCustomComp() ? 'block' : 'none';
+    });
+
+    // Split textarea content on blank lines → array of document strings
+    function parseDocuments(text) {
+      return text.split(/\n[ \t]*\n/).map(d => d.trim()).filter(Boolean);
+    }
+
+    function ragShowIngestSt(msg) {
+      ragIngestSt.textContent = msg;
+      ragIngestSt.style.display = msg ? 'block' : 'none';
+    }
+    function ragShowQuerySt(msg) {
+      ragQuerySt.textContent = msg;
+      ragQuerySt.style.display = msg ? 'block' : 'none';
+    }
+
+    // Parse SSE stream helpers
+    async function* parseSseStream(res) {
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const blocks = buf.split('\n\n');
+        buf = blocks.pop();
+        for (const block of blocks) {
+          const eM = block.match(/^event: (\w+)/m);
+          const dM = block.match(/^data: (.+)/m);
+          if (eM && dM) yield { type: eM[1], data: JSON.parse(dM[1]) };
+        }
+      }
+    }
+
+    ragIngestBtn.addEventListener('click', async () => {
+      const documents = parseDocuments(ragDocs.value);
+      if (documents.length === 0) {
+        ragShowIngestSt('Please enter at least one document.');
+        return;
+      }
+      ragIngestBtn.disabled = true;
+      ragDocs.disabled = true;
+      ragIngestProg.style.display = 'block';
+      ragIngestBar.style.width = '0';
+      ragIngestLbl.textContent = 'Starting…';
+      ragShowIngestSt('');
+
+      try {
+        const res = await fetch('/api/rag/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ documents }),
+        });
+        if (!res.ok) { ragShowIngestSt('Error: ' + await res.text()); return; }
+
+        for await (const { type, data } of parseSseStream(res)) {
+          if (type === 'load') {
+            ragIngestBar.style.width = data.percentage + '%';
+            ragIngestLbl.textContent = `Downloading model… ${data.percentage}%`;
+          } else if (type === 'progress') {
+            const pct = data.total > 0 ? Math.round((data.current / data.total) * 100) : 50;
+            ragIngestBar.style.width = pct + '%';
+            ragIngestLbl.textContent = `[${data.stage}] ${data.current} / ${data.total}`;
+          } else if (type === 'done') {
+            ragIngestBar.style.width = '100%';
+            ragShowIngestSt(`✅ Ingested ${data.processed} document${data.processed !== 1 ? 's' : ''}.`);
+          } else if (type === 'error') {
+            ragShowIngestSt('Error: ' + data.message);
+          }
+        }
+      } catch (err) {
+        ragShowIngestSt('Error: ' + err.message);
+      } finally {
+        ragIngestProg.style.display = 'none';
+        ragIngestBtn.disabled = false;
+        ragDocs.disabled = false;
+      }
+    });
+
+    ragAskBtn.addEventListener('click', async () => {
+      const query = ragQueryEl.value.trim();
+      const completionModelSrc = ragIsCustomComp()
+        ? ragCompCustom.value.trim()
+        : TEXT_PRESETS[ragCompModel.value].url;
+      if (!query || !completionModelSrc) return;
+
+      ragAskBtn.disabled    = true;
+      ragQueryEl.disabled   = true;
+      ragCompModel.disabled = true;
+      ragCompCustom.disabled = true;
+      ragContextEl.style.display = 'none';
+      ragContextList.innerHTML   = '';
+      ragAnswerEl.style.display  = 'none';
+      ragAnswerText.textContent  = '';
+      ragShowQuerySt('Connecting…');
+
+      try {
+        const res = await fetch('/api/rag/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, completionModelSrc }),
+        });
+        if (!res.ok) { ragShowQuerySt('Error: ' + await res.text()); return; }
+
+        for await (const { type, data } of parseSseStream(res)) {
+          if (type === 'status') {
+            ragShowQuerySt(data.message);
+          } else if (type === 'load') {
+            ragShowQuerySt(`Downloading ${data.phase} model… ${data.percentage}%`);
+          } else if (type === 'context') {
+            ragContextList.innerHTML = '';
+            for (const r of data.results) {
+              const li = document.createElement('li');
+              li.textContent = r.content;
+              const span = document.createElement('span');
+              span.className = 'context-score';
+              span.textContent = `score: ${r.score.toFixed(3)}`;
+              li.appendChild(span);
+              ragContextList.appendChild(li);
+            }
+            if (data.results.length > 0) ragContextEl.style.display = 'block';
+          } else if (type === 'token') {
+            if (ragAnswerEl.style.display === 'none') {
+              ragAnswerEl.style.display = 'block';
+              ragShowQuerySt('');
+            }
+            ragAnswerText.textContent += data.text;
+          } else if (type === 'done') {
+            ragShowQuerySt('');
+          } else if (type === 'error') {
+            ragShowQuerySt('Error: ' + data.message);
+          }
+        }
+      } catch (err) {
+        ragShowQuerySt('Error: ' + err.message);
+      } finally {
+        ragAskBtn.disabled     = false;
+        ragQueryEl.disabled    = false;
+        ragCompModel.disabled  = false;
+        ragCompCustom.disabled = false;
+      }
+    });
+
+
+    // ── Reset worker ─────────────────────────────────────────────────────
+    document.getElementById('reset-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('reset-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Resetting…';
+      try {
+        const r = await fetch('/api/reset', { method: 'POST' });
+        const json = await r.json();
+        btn.textContent = json.ok ? '✅ Worker reset' : '❌ ' + json.error;
+      } catch (err) {
+        btn.textContent = '❌ ' + err.message;
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = '⚡ Reset worker';
+        }, 2000);
+      }
+    });
+
   </script>
 </body>
 </html>
